@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:mysql1/mysql1.dart';
+
 import 'controller/UserController.dart';
 import 'exceptions/ActionNotFoundException.dart';
 import 'exceptions/ResourceNotFoundException copy.dart';
@@ -23,8 +25,6 @@ Future requestHandler(HttpRequest request) async {
     var resource = request.uri.pathSegments[0];
     var action = request.uri.pathSegments[1];
 
-    stdout.writeln(resource);
-
     switch (resource) {
       case 'user':
         await UserController.use(action, request);
@@ -34,8 +34,22 @@ Future requestHandler(HttpRequest request) async {
         break;
     }
   } catch (e) {
-    request.response.statusCode = 400;
-    request.response.write(jsonEncode(e));
+    if (e is MySqlException) {
+      request.response.statusCode = 500;
+      request.response.write(jsonEncode({
+        'message': e.errorNumber,
+        'errorNumber': e.message,
+        'sqlState': e.sqlState,
+      }));
+    } else if (e is ActionNotFoundException || e is ResourceNotFoundException) {
+      request.response.statusCode = 400;
+      request.response.write(jsonEncode(e));
+    } else {
+      request.response.statusCode = 500;
+      request.response.write(jsonEncode({
+        'message': e.toString(),
+      }));
+    }
   } finally {
     await request.response.close();
   }
