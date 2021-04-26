@@ -8,7 +8,7 @@ import 'exceptions/ActionNotFoundException.dart';
 import 'exceptions/ResourceNotFoundException copy.dart';
 
 Future setup() async {
-  var server = await HttpServer.bind(InternetAddress.loopbackIPv4, 4005);
+  var server = await HttpServer.bind('0.0.0.0', 4007);
   stdout.writeln('Listening on port ${server.port}');
   await for (HttpRequest request in server) {
     await requestHandler(request);
@@ -18,6 +18,9 @@ Future setup() async {
 Future requestHandler(HttpRequest request) async {
   try {
     request.response.headers.contentType = ContentType.json;
+    request.response.headers.add('Access-Control-Allow-Origin', '*');
+    request.response.headers.add('Access-Control-Allow-Headers', '*');
+    request.response.headers.add('Access-Control-Allow-Methods', 'GET');
 
     if (request.uri.pathSegments.isEmpty) throw ResourceNotFoundException();
     if (request.uri.pathSegments.length < 2) throw ActionNotFoundException();
